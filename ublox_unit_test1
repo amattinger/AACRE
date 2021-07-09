@@ -33,7 +33,7 @@ for col in range(5, maxCols - 1, 7):
 # turn csv into a data file now that column names have been added
 df = pd.read_csv(dataFile, header=None, delimiter=delimiter, names=colNames)
 df.drop(index=df.index[0], axis=0, inplace=True)
-print(df)
+# print(df)
 
 # save as csv [couldn't get the first and second parts to integrate without
 # doing this]
@@ -49,6 +49,11 @@ df['time'] = df['time'].subtract(df['time'][0])
 
 # plot number of satellites against time
 plt.scatter(df['time'], df['numSV'])
+plt.xlabel('time [s]')
+plt.ylabel('no. SVs')
+
+# average number of satellites
+print("\nAverage number of satellites:", format(df['numSV'].mean(), '.2f'))
 
 # test: code carrier relation: count the number of times per satellite 
 # that code [pseudorange prMes] - abs value carrier [cpMes] * 0.19m is 0
@@ -57,7 +62,7 @@ x = lambda a : 0.19*abs(a)
 codes = [col for col in df.columns if 'prMes' in col]
 carriers = [col for col in df.columns if 'cpMes' in col]
 
-print("First test: difference equals zero")
+print("\nFirst test: difference equals zero")
 for num in range(len(codes)):
     df['sv' + str(num) + '.zeroCorr'] = (df[codes[num]] - x(df[carriers[num]]) == 0)
     #print(df[codes[num]])
