@@ -1,0 +1,71 @@
+import csv
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# first: preprocess data file in case it has a variable number of 
+# columns and they don't all have headers
+
+# input and defs
+dataFile = "/Users/amattinger/Downloads/gps_data_all.txt"
+delimiter = ','
+maxCols = 0
+
+# loop through data lines
+with open(dataFile, 'r') as temp:
+    lines = temp.readlines()
+    for l in lines:
+        # count columns in current line
+        colCount = len(l.split(delimiter)) + 1
+        # Set the new most column count
+        maxCols = colCount if maxCols < colCount else maxCols
+
+# set column names
+colNames = ['time', 'rcvTOW', 'week', 'numSV','reserved1']
+# generate column names for each satellite 
+i = 0
+for col in range(5, maxCols - 1, 7):
+    n = str(i)
+    colNames.extend(['sv'+n+'.cpMes', 'sv'+n+'.prMes', 'sv'+n+'.doMes', 
+            'sv'+n+'.sv', 'sv'+n+'.mesQI', 'sv'+n+'.cno', 'sv'+n+'.lli'])
+    i += 1
+
+# turn csv into a data file now that column names have been added
+df = pd.read_csv(dataFile, header=None, delimiter=delimiter, names=colNames)
+df.drop(index=df.index[0], axis=0, inplace=True)
+print(df)
+
+# save as csv [seems a bit roundabout to make a df > csv > df, but I couldn't 
+# get everything to work together until I did this]
+df.to_csv('/Users/amattinger/Downloads/gps_data_processed.csv', index=False)
+
+# second: read new csv into a df and perform unit tests
+
+df = pd.read_csv('/Users/amattinger/Downloads/gps_data_processed.csv')
+
+# subtract first time from all subsequent times [i.e., start at t=0]   
+df['time'] = df['time'].subtract(df['time'][0])
+# print(df)
+
+# plot number of satellites against time
+plt.scatter(df['time'], df['numSV'])
+
+# test: code carrier relation: count the number of times per satellite 
+# that code [pseudorange prMes] - abs value carrier [cpMes] * 0.19m is 0
+correlations = 0
+x = lambda a : 0.19*abs(a)
+codes = [col for col in df.columns if 'prMes' in col]
+carriers = [col for col in df.columns if 'cpMes' in col]
+
+print("First test: difference equals zero")
+for num in range(len(codes)):
+    df['sv' + str(num) + '.zeroCorr'] = (df[codes[num]] - x(df[carriers[num]]) == 0)
+    #print(df[codes[num]])
+    #print(x(df[carriers[num]]))
+    print(df['sv' + str(num) + '.zeroCorr'].value_counts())
+    
+# test: check that prMeas is not a perfect multiple of 0.19*cpMeas 
+print("\nSecond test: perfect multiplier")
+for num in range(len(codes)):
+    df['sv' + str(num) + '.perfMult'] = (df[codes[num]] % x(df[carriers[num]]) == 0)
+    print(df['sv' + str(num) + '.perfMult'].value_counts())
