@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 # input and defs
 dataFile = "/Users/amattinger/Downloads/gps_data_all.txt"
+processedFile = "/Users/amattinger/Downloads/gps_data_processed.csv"
 delimiter = ','
 maxCols = 0
 
@@ -34,13 +35,13 @@ df = pd.read_csv(dataFile, header=None, delimiter=delimiter, names=colNames)
 df.drop(index=df.index[0], axis=0, inplace=True)
 print(df)
 
-# save as csv [seems a bit roundabout to make a df > csv > df, but I couldn't 
-# get everything to work together until I did this]
-df.to_csv('/Users/amattinger/Downloads/gps_data_processed.csv', index=False)
+# save as csv [couldn't get the first and second parts to integrate without
+# doing this]
+df.to_csv(processedFile, index=False)
 
 # second: read new csv into a df and perform unit tests
 
-df = pd.read_csv('/Users/amattinger/Downloads/gps_data_processed.csv')
+df = pd.read_csv(processedFile)
 
 # subtract first time from all subsequent times [i.e., start at t=0]   
 df['time'] = df['time'].subtract(df['time'][0])
