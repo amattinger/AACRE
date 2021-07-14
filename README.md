@@ -9,13 +9,13 @@ ublox_unit_test1:
   a. equivalency
   b. perfect multiple
   
-ublox_unit_test2 [INCOMPLETE]:
+ublox_unit_test2:
 1. Converts raw latitude-longitude-altitude coordinates into east-north-up (ENU) coordinates
 2. Rewrites time to start from 0 and increase in 0.05s increments
 3. Plots east, north, and up coordinates each vs. time.
-4. TODO:
-  a. make sure the plots above are actually correct. They all look the same,
-     and it takes forever (up to 10 minutes) for them to generate on my computer,
-     regardless of which method I use (plotting df or array)
+4. Overlays lat/lon coordinates on Google Maps
+5. TODO:
+  a. make sure the ENU/time plots above are actually correct. They all look the same,
+     and it takes forever (up to 10 minutes) for them to generate on my computer, whether I 
+     plot with df or array.
   b. fix labels so they're not all overlapping each other
-  c. overlay coordinates on Google Maps (currently not included in this file)
