@@ -12,7 +12,8 @@ ublox_unit_test1:
 ublox_unit_test2 [INCOMPLETE]:
 1. Converts raw latitude-longitude-altitude coordinates into east-north-up (ENU) coordinates
 2. Rewrites time to start from 0 and increase in 0.05s increments
-3. TODO:
+3. Plots east, north, and up coordinates each vs. time.
+4. TODO:
   a. make sure the plots above are actually correct. They all look the same,
      and it takes forever (up to 10 minutes) for them to generate on my computer,
      regardless of which method I use (plotting df or array)
