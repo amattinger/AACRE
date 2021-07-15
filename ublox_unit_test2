@@ -2,55 +2,68 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import gmplot as gmp
 import numpy as np
-#import matplotlib.ticker as MaxNLocator
-#import pymap3d as pm
+import pymap3d as pm
 
-dataFile = "/Users/amattinger/Downloads/20160528-111336-position.csv"
+dataFile = "/Users/amattinger/Downloads/Ublox-20160528-111336-position.csv"
+#dataFile = "/Users/amattinger/Downloads/Ublox-20160528-105738-position.csv"
+latCol = 'latitude(degrees)'
+lonCol = 'longitude(degrees)'
+altCol = 'altitude(meters)'
 
 df = pd.read_csv(dataFile) 
 print(df)
 
 # set origin [default: use starting coordinates]
-lat0 = df['latitude(degrees)'][0]
-lon0 = df['longitude(degrees)'][0]
-alt0 = df['altitude(meters)'][0]
+lat0 = df[latCol][0]
+lon0 = df[lonCol][0]
+alt0 = df[altCol][0]
 
-# Convert lat/lon data to ENU [east north up] coordinates 
+# first: get ENU [east north up] coordinates and plot each vs time
+
+# convert lat/lon data to ENU
 enu = []
 
 for i in range(len(df.index)):
-    lat = df['latitude(degrees)'][i]
-    lon = df['longitude(degrees)'][i]
-    alt = df['altitude(meters)'][i]
+    lat = df[latCol][i]
+    lon = df[lonCol][i]
+    alt = df[altCol][i]
     enu.append({'enu': str(pm.geodetic2enu(lat, lon, alt, lat0, lon0, alt0))})
 
-# Make a new dataframe w/ ENU coordinates
+# make a new dataframe w/ ENU coordinates
 enuDf = pd.DataFrame(enu)
 
-# Split ENU coordinates from one column into three separate columns
+# split ENU coordinates from one column into three separate columns
 enuDf = enuDf['enu'].str.strip('()')\
             .str.split(', ', expand=True)\
             .rename(columns={0:'east', 1:'north', 2:'up'})
 
-# Insert time column, resulting in 4 column df, convert time so it
+# insert time column, resulting in 4 column df, convert time so it
 # begins at 0 and increases by 0.05s increments
 #enuDf.insert(0, "time", df['time'], True)
 enuDf.insert(0, 'time', True)
 enuDf['time'] = df.index * 0.05
 
-# a: plotting as dataframe [comment out if plotting as array]
-#print(enuDf)
-#enuDf.plot(kind='scatter', x='time', y='east')
+# fix ENU pts so they're floats, not strings [else y-axis will be unordered]
+enuDf["east"] = pd.to_numeric(enuDf["east"], downcast="float", errors='coerce')
+enuDf["north"] = pd.to_numeric(enuDf["north"], downcast="float", errors='coerce')
+enuDf["up"] = pd.to_numeric(enuDf["up"], downcast="float", errors='coerce')
 
-# b: plotting as array [comment out if plotting as df]
-#enu = np.array(enuDf)
-#print(enu)
-#plt.plot(enu[:,0], enu[:,1])
+# b: plotting time vs east as array 
+enu = np.array(enuDf)
+t = enu[:,0]
+e = enu[:,1]
+n = enu[:,2]
+u = enu[:,3]
 
-# TODO: make sure the plots above are actually correct. They all look the same,
-# and it takes forever [up to 10 minutes] for them to generate on my computer,
-# regardless of which method I use.
-# TODO: fix labels so they're not all overlapping each other
+x = 500 # for simplicity, only every x-th pt is plotted; change as needed.
+fig, (ax1, ax2, ax3) = plt.subplots(3)
+ax1.plot(t[::x], e[::x], 'tab:red')
+ax1.set(xlabel='time [s]', ylabel='east')
+ax2.plot(t[::x], n[::x], 'tab:green')
+ax2.set(xlabel='time [s]', ylabel='north')
+ax3.plot(t[::x], u[::x], 'tab:blue')
+ax3.set(xlabel='time [s]', ylabel='up')
+fig.tight_layout() # fixes overlap b/t subplots
 
 # second: overlay lat/lon coordinates on Google Maps
 
