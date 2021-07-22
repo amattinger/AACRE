@@ -1,0 +1,164 @@
+# USER: set field names
+# 1. plot lat/lon and create google maps overlay
+# 2. plot velocity [north, east, and down] as a function of time in 3 different sub-plots 
+# USER: check whether velE/N/D already exist, set up test 2 accordingly
+# 3. plot velocity [forward and lateral] as a function of time
+# 4. plot linear acceleration [x, y, and z] as a function of time
+# 5. plot number of gps satellites as a function of time, output mean # of sats
+
+import pandas as pd  
+import matplotlib.pyplot as plt
+import gmplot as gmp
+import numpy as np
+import pymap3d as pm # for test 2 if enu needed
+
+dataFile = "/Users/amattinger/Downloads/210720_224129.xcom.NCOM6SummaryPage.csv"
+mapLoc = "/Users/amattinger/Downloads/oxts_data_processed.html" # for google maps overlay
+
+# set field names [variation b/t files]
+time = ' Time from start of region()'
+#delimiter = ','
+latCol = ' Latitude(deg)'
+lonCol = ' Longitude(deg)'
+altCol = ' Altitude(m)'
+# test 2
+velDown = ' Velocity down(m/s)'
+velNorth = ''
+velEast = ''
+# test 3
+velFwd = ' Velocity forward(m/s)'
+velLat = ' Velocity lateral(m/s)'
+# test 4
+xAccel = ' Acceleration Xv(m/s²)'
+yAccel = ' Acceleration Yv(m/s²)'
+zAccel = ' Acceleration Zv(m/s²)'
+# test 5
+numSats = ' Number of GPS satellites used()'
+
+df = pd.read_csv(dataFile) 
+
+# 1. plot lat/lon and create google maps overlay
+
+# set origin
+lat0 = df[latCol][0]
+lon0 = df[lonCol][0]
+alt0 = df[altCol][0]
+
+zoom = 17 # default zoom, change as desired 
+gmap = gmp.GoogleMapPlotter(lat0, lon0, zoom) # create map at origin
+  
+# overlays coordinate points onto map
+gmap.scatter(df[latCol], df[lonCol], size = 1, 
+              linewidth = 1, marker = False) 
+
+# draws a blue line b/t given coordinate points
+gmap.plot(df[latCol], df[lonCol],
+           color = 'cornflowerblue', edge_width = 2.5)
+
+# Google requires making an API Key to use Maps as of June 2018
+gmap.apikey = 'AIzaSyD35yqdBVeZWkx09XJibVt6CNreupbdWLo'
+  
+gmap.draw(mapLoc)
+
+# 2. plot velocity [north, east, and down] as a function of time in 3 different sub-plots 
+
+# if missing velEast, velNorth, and/or velDown fields, 
+# convert to ENU coordinates then take Δpos/Δtime
+
+# convert lat/lon data to ENU
+enu = []
+
+for i in range(len(df.index)):
+    lat = df[latCol][i]
+    lon = df[lonCol][i]
+    alt = df[altCol][i]
+    enu.append({'enu': str(pm.geodetic2enu(lat, lon, alt, lat0, lon0, alt0))})
+
+# make a new dataframe w/ ENU coordinates
+enuDf = pd.DataFrame(enu)
+
+# split ENU coordinates from one column into three separate columns
+enuDf = enuDf['enu'].str.strip('()')\
+            .str.split(', ', expand=True)\
+            .rename(columns={0:'east', 1:'north', 2:'up'})
+
+# insert time column, resulting in 4 column df, convert time so it
+# begins at 0 and increases by 0.05s increments
+#enuDf.insert(0, "time", df['time'], True)
+timeIncrement = 0.05
+enuDf.insert(0, 'time', True)
+enuDf['time'] = df.index * timeIncrement
+
+# resolved: plots were identical/incorrect b/c ENU coordinates were strings
+# so y-axis was unordered
+enuDf["east"] = pd.to_numeric(enuDf["east"], downcast="float", errors='coerce')
+enuDf["north"] = pd.to_numeric(enuDf["north"], downcast="float", errors='coerce')
+enuDf["up"] = pd.to_numeric(enuDf["up"], downcast="float", errors='coerce')
+
+# now that we have ENU positional coordinates, compute Δpos/Δtime
+enuDf.insert(4, 'velEast', True)
+enuDf.insert(5, 'velNorth', True)
+#enuDf.insert(6, 'velDown', True)
+for i in range(1, len(df.index)):
+    enuDf['velEast'] = (enuDf['east'][i] - enuDf['east'][i-1])/timeIncrement
+    enuDf['velNorth'] = (enuDf['north'][i] - enuDf['north'][i-1])/timeIncrement
+    #enuDf['velDown'] = (enuDf['up'][i-1] - enuDf['up'][i])/timeIncrement # note: down, not up
+
+velEast = 'velEast'
+velNorth = 'velNorth'
+#velDown = 'velDown'
+
+# if already have velEast, velNorth, and velDown fields, can remove or comment 
+# out everything b/t test 2's description/header comment and here 
+
+# for each: set df or enuDf according to whether field existed in original file
+t = df[time]
+e = enuDf[velEast]
+n = enuDf[velNorth]
+d = df[velDown]
+
+fig0, (ax0, ax1, ax2) = plt.subplots(3)
+ax0.title.set_text('Velocity [east, north, down] vs. Time')
+x = 200 # for simplicity, only every x-th pt is plotted; change as needed.
+ax0.plot(t[::x], e[::x]) # set df or enuDf
+ax0.set(xlabel='time [s]', ylabel='east v [m/s]')
+ax1.plot(t[::x], n[::x]) # set df or enuDf 
+ax1.set(xlabel='time [s]', ylabel='north v [m/s]')
+ax2.plot(t[::x], d[::x]) # set df or enuDf 
+ax2.set(xlabel='time [s]', ylabel='down v [m/s]')
+fig0.tight_layout() # fixes overlap b/t subplots
+
+# 3. plot velocity [forward and lateral] as a function of time
+
+fig1, (ax3, ax4) = plt.subplots(2)
+ax3.title.set_text('Velocity [fwd, lateral] vs. Time')
+ax3.plot(df[time], df[velFwd])
+ax3.set(xlabel='time [s]', ylabel='forward v [m/s]')
+ax4.plot(df[time], df[velLat])
+ax4.set(xlabel='time [s]', ylabel='lateral v [m/s]')
+
+# 4. plot linear acceleration [x, y, and z] as a function of time
+t = df[time]
+x = df[xAccel]
+y = df[yAccel]
+z = df[zAccel]
+
+n = 200 # for simplicity, only every nth pt is plotted; change as needed.
+fig2, (ax5, ax6, ax7) = plt.subplots(3)
+ax5.title.set_text('Acceleration [x, y, z] vs. Time')
+ax5.plot(t[::n], x[::n], 'tab:red')
+ax5.set(xlabel='time [s]', ylabel='x accel [m/s²]')
+ax6.plot(t[::n], y[::n], 'tab:green')
+ax6.set(xlabel='time [s]', ylabel='y accel [m/s²]')
+ax7.plot(t[::n], z[::n], 'tab:blue')
+ax7.set(xlabel='time [s]', ylabel='z accel [m/s²]')
+fig2.tight_layout() # fixes overlap b/t subplots
+
+# 5. plot number of gps satellites as a function of time, output mean # of sats
+fig3, ax8 = plt.subplots()
+ax8.title.set_text('GPS Number of Satellites vs. Time')
+ax8.scatter(df[time], df[numSats], s=1)
+ax8.set(xlabel='time [s]', ylabel='no. SVs')
+
+# average number of satellites
+print("\nAverage number of satellites:", format(df[numSats].mean(), '.2f'))
