@@ -1,12 +1,17 @@
+# 0. preprocess data in case variable number of columns/missing column headers
+# 1. plot number of satellites against time
+# 2. code carrier relation: 
+# 2a. count times per sat that code [pseudorange/prMes] - absval carrier [cpMes]*0.19m = 0
+# 2b. check that prMeas is not a perfect multiple of 0.19*cpMeas 
+
 import csv
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# first: preprocess data file in case it has a variable number of 
-# columns and they don't all have headers
+# 0. preprocess data in case variable number of columns/missing column headers
 
 # input and defs
-dataFile = "/Users/amattinger/Downloads/gps_data_all.txt"
+dataFile = "/Users/amattinger/Downloads/15-53-22_ublox_rxmraw.csv"
 processedFile = "/Users/amattinger/Downloads/gps_data_processed.csv"
 delimiter = ','
 maxCols = 0
@@ -35,28 +40,28 @@ df = pd.read_csv(dataFile, header=None, delimiter=delimiter, names=colNames)
 df.drop(index=df.index[0], axis=0, inplace=True)
 # print(df)
 
-# save as csv [couldn't get the first and second parts to integrate without
-# doing this]
+# save as csv 
 df.to_csv(processedFile, index=False)
 
-# second: read new csv into a df and perform unit tests
+# read new csv into a df, then perform unit tests
 
 df = pd.read_csv(processedFile)
+
+# 1. plot number of satellites against time, output mean
 
 # subtract first time from all subsequent times [i.e., start at t=0]   
 df['time'] = df['time'].subtract(df['time'][0])
 # print(df)
 
-# plot number of satellites against time
-plt.scatter(df['time'], df['numSV'])
+plt.scatter(df['time'], df['numSV'], s=1)
 plt.xlabel('time [s]')
 plt.ylabel('no. SVs')
 
 # average number of satellites
 print("\nAverage number of satellites:", format(df['numSV'].mean(), '.2f'))
 
-# test: code carrier relation: count the number of times per satellite 
-# that code [pseudorange prMes] - abs value carrier [cpMes] * 0.19m is 0
+# 2. code carrier relation: 
+# 2a. count times per sat that code [pseudorange/prMes] - absval carrier [cpMes]*0.19m = 0
 correlations = 0
 x = lambda a : 0.19*abs(a)
 codes = [col for col in df.columns if 'prMes' in col]
@@ -65,11 +70,9 @@ carriers = [col for col in df.columns if 'cpMes' in col]
 print("\nFirst test: difference equals zero")
 for num in range(len(codes)):
     df['sv' + str(num) + '.zeroCorr'] = (df[codes[num]] - x(df[carriers[num]]) == 0)
-    #print(df[codes[num]])
-    #print(x(df[carriers[num]]))
     print(df['sv' + str(num) + '.zeroCorr'].value_counts())
     
-# test: check that prMeas is not a perfect multiple of 0.19*cpMeas 
+# 2b. check that prMeas is not a perfect multiple of 0.19*cpMeas 
 print("\nSecond test: perfect multiplier")
 for num in range(len(codes)):
     df['sv' + str(num) + '.perfMult'] = (df[codes[num]] % x(df[carriers[num]]) == 0)
