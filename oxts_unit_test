@@ -1,9 +1,9 @@
 # USER: set field names
 # 1. plot lat/lon and create google maps overlay
-# 2. plot velocity [north, east, and down] as a function of time in 3 different sub-plots 
+# 2. plot velocity [north, east, and down] as functions of time 
 # USER: check whether velE/N/D already exist, set up test 2 accordingly
-# 3. plot velocity [forward and lateral] as a function of time
-# 4. plot linear acceleration [x, y, and z] as a function of time
+# 3. plot velocity [forward and lateral] as functions of time
+# 4. plot linear acceleration [x, y, and z] as functions of time
 # 5. plot number of gps satellites as a function of time, output mean # of sats
 
 import pandas as pd  
@@ -13,6 +13,7 @@ import numpy as np
 import pymap3d as pm # for test 2 if enu needed
 
 dataFile = "/Users/amattinger/Downloads/210720_224129.xcom.NCOM6SummaryPage.csv"
+APIKey = '' # You need to generate your own API key to do test 1
 mapLoc = "/Users/amattinger/Downloads/oxts_data_processed.html" # for google maps overlay
 
 # set field names [variation b/t files]
@@ -47,8 +48,12 @@ alt0 = df[altCol][0]
 zoom = 17 # default zoom, change as desired 
 gmap = gmp.GoogleMapPlotter(lat0, lon0, zoom) # create map at origin
   
-# overlays coordinate points onto map
-gmap.scatter(df[latCol], df[lonCol], size = 1, 
+# overlay coordinate points onto map
+lats = df[latCol]
+lons = df[lonCol]
+xth = 2000 # map plots every xth, try 1, increase as needed if map won't load
+
+gmap.scatter(lats[::xth], lons[::xth], size = 1, 
               linewidth = 1, marker = False) 
 
 # draws a blue line b/t given coordinate points
@@ -56,11 +61,11 @@ gmap.plot(df[latCol], df[lonCol],
            color = 'cornflowerblue', edge_width = 2.5)
 
 # Google requires making an API Key to use Maps as of June 2018
-gmap.apikey = 'AIzaSyD35yqdBVeZWkx09XJibVt6CNreupbdWLo'
+gmap.apikey = APIKey
   
 gmap.draw(mapLoc)
 
-# 2. plot velocity [north, east, and down] as a function of time in 3 different sub-plots 
+# 2. plot velocity [north, east, and down] as a function of time 
 
 # if missing velEast, velNorth, and/or velDown fields, 
 # convert to ENU coordinates then take Δpos/Δtime
@@ -119,12 +124,12 @@ d = df[velDown]
 
 fig0, (ax0, ax1, ax2) = plt.subplots(3)
 ax0.title.set_text('Velocity [east, north, down] vs. Time')
-x = 200 # for simplicity, only every x-th pt is plotted; change as needed.
-ax0.plot(t[::x], e[::x]) # set df or enuDf
+nth = 200 # for simplicity, only every nth pt is plotted; change as needed.
+ax0.plot(t[::nth], e[::nth]) # set df or enuDf
 ax0.set(xlabel='time [s]', ylabel='east v [m/s]')
-ax1.plot(t[::x], n[::x]) # set df or enuDf 
+ax1.plot(t[::nth], n[::nth]) # set df or enuDf 
 ax1.set(xlabel='time [s]', ylabel='north v [m/s]')
-ax2.plot(t[::x], d[::x]) # set df or enuDf 
+ax2.plot(t[::nth], d[::nth]) # set df or enuDf 
 ax2.set(xlabel='time [s]', ylabel='down v [m/s]')
 fig0.tight_layout() # fixes overlap b/t subplots
 
@@ -143,14 +148,13 @@ x = df[xAccel]
 y = df[yAccel]
 z = df[zAccel]
 
-n = 200 # for simplicity, only every nth pt is plotted; change as needed.
 fig2, (ax5, ax6, ax7) = plt.subplots(3)
 ax5.title.set_text('Acceleration [x, y, z] vs. Time')
-ax5.plot(t[::n], x[::n], 'tab:red')
+ax5.plot(t[::nth], x[::nth], 'tab:red')
 ax5.set(xlabel='time [s]', ylabel='x accel [m/s²]')
-ax6.plot(t[::n], y[::n], 'tab:green')
+ax6.plot(t[::nth], y[::nth], 'tab:green')
 ax6.set(xlabel='time [s]', ylabel='y accel [m/s²]')
-ax7.plot(t[::n], z[::n], 'tab:blue')
+ax7.plot(t[::nth], z[::nth], 'tab:blue')
 ax7.set(xlabel='time [s]', ylabel='z accel [m/s²]')
 fig2.tight_layout() # fixes overlap b/t subplots
 
