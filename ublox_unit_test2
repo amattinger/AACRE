@@ -4,21 +4,21 @@ import gmplot as gmp
 import numpy as np
 import pymap3d as pm
 
-dataFile = "/Users/amattinger/Downloads/Ublox-20160528-111336-position.csv"
-#dataFile = "/Users/amattinger/Downloads/Ublox-20160528-105738-position.csv"
+# initialize the stuffffff
+dataFile = '' 
 latCol = 'latitude(degrees)'
 lonCol = 'longitude(degrees)'
 altCol = 'altitude(meters)'
+APIKey = '' # You need to generate an API key to do the map overlay
 
 df = pd.read_csv(dataFile) 
-print(df)
+
+# 1. get ENU [east north up] coordinates and plot each vs time
 
 # set origin [default: use starting coordinates]
 lat0 = df[latCol][0]
 lon0 = df[lonCol][0]
 alt0 = df[altCol][0]
-
-# first: get ENU [east north up] coordinates and plot each vs time
 
 # convert lat/lon data to ENU
 enu = []
@@ -37,8 +37,7 @@ enuDf = enuDf['enu'].str.strip('()')\
             .str.split(', ', expand=True)\
             .rename(columns={0:'east', 1:'north', 2:'up'})
 
-# insert time column, resulting in 4 column df, convert time so it
-# begins at 0 and increases by 0.05s increments
+# insert time col, fix time to start at 0 w/ +0.05s increments
 #enuDf.insert(0, "time", df['time'], True)
 enuDf.insert(0, 'time', True)
 enuDf['time'] = df.index * 0.05
@@ -48,7 +47,7 @@ enuDf["east"] = pd.to_numeric(enuDf["east"], downcast="float", errors='coerce')
 enuDf["north"] = pd.to_numeric(enuDf["north"], downcast="float", errors='coerce')
 enuDf["up"] = pd.to_numeric(enuDf["up"], downcast="float", errors='coerce')
 
-# b: plotting time vs east as array 
+# plotting time vs east as array [could also do df]
 enu = np.array(enuDf)
 t = enu[:,0]
 e = enu[:,1]
@@ -65,7 +64,7 @@ ax3.plot(t[::x], u[::x], 'tab:blue')
 ax3.set(xlabel='time [s]', ylabel='up')
 fig.tight_layout() # fixes overlap b/t subplots
 
-# second: overlay lat/lon coordinates on Google Maps
+# 2. overlay lat/lon coordinates on Google Maps
 
 mapLoc = ('/Users/amattinger/Desktop/gmap_data.html')
 
@@ -81,6 +80,6 @@ gmap1.plot(df['latitude(degrees)'], df['longitude(degrees)'],
            color = 'cornflowerblue', edge_width = 2.5)
 
 # Google requires making an API Key to use Maps as of June 2018
-gmap1.apikey = 'AIzaSyD35yqdBVeZWkx09XJibVt6CNreupbdWLo'
+gmap1.apikey = APIKey
   
 gmap1.draw(mapLoc)
