@@ -40,11 +40,8 @@ df = pd.read_csv(dataFile, header=None, delimiter=delimiter, names=colNames)
 df.drop(index=df.index[0], axis=0, inplace=True)
 # print(df)
 
-# save as csv 
+# save as csv, read into df
 df.to_csv(processedFile, index=False)
-
-# read new csv into a df, then perform unit tests
-
 df = pd.read_csv(processedFile)
 
 # 1. plot number of satellites against time, output mean
