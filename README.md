@@ -1,4 +1,4 @@
-Summer 2021 unit tests for Stanford NAVLab TRI project through AACRE
+Summer 2021 unit tests for Stanford NAVLab TRI project through AACRE //
 Author: Anna Mattinger
 
 ublox_unit_test1:
