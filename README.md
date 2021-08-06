@@ -17,7 +17,7 @@ Requires API key for test 4
 4. Overlays lat/lon coordinates on Google Maps
 
 oxts_unit_test:
-Requires an API Key for test 1
+Requires an API key for test 1
 1. Plots lat/lon and creates Google Maps overlay
 2. Plots velocity (north, east, and down) as a function of time 
   NOTE: requires user set-up based on whether there are preexisting velE/N/D fields
