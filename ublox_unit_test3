@@ -1,0 +1,166 @@
+# This script explores the covariance fields and assumes there are three [posn_covariance0, 4 and 8]
+# 1. plot the position covariance fields in a single plot vs time
+# 2. plot cov0, cov4, and cov8 as three separate subplots
+# Look at num sats and pDOP to see if any connection to one another and/or to covariance
+# 3. plot number of satellites vs time 
+# 4. plot position dilution of precision vs time
+# 5. print some basic stats [mean, min, max]
+# 6. plot covariances across three limited ranges [x<100, 100<x<1000, x>1000]
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# 0. preprocess rxmraw file by adding column headers; turn fixFile, solFile, 
+# and rxmFile into dfs
+
+# assumption: files are synchronized
+
+# input and defs
+# to do all tests required three corresponding ROS topics
+fixFile = '/Users/amattinger/Downloads/15-53-28_ublox_fix.csv'
+rxmFile = "/Users/amattinger/Downloads/15-53-28_ublox_rxmraw.csv"
+solFile = '/Users/amattinger/Downloads/15-53-28_ublox_navsol.csv'
+processedFile = "/Users/amattinger/Downloads/gps_data_processed.csv"
+delimiter = ','
+maxCols = 0
+
+# fixFile directly to df
+fixDf = pd.read_csv(fixFile)
+solDf = pd.read_csv(solFile)
+
+# preprocess rxmFile
+# loop through data lines
+with open(rxmFile, 'r') as temp:
+    lines = temp.readlines()
+    for l in lines:
+        # count columns in current line
+        colCount = len(l.split(delimiter)) + 1
+        # Set the new most column count
+        maxCols = colCount if maxCols < colCount else maxCols
+
+# set column names
+colNames = ['%time', 'rcvTOW', 'week', 'numSV','reserved1']
+# generate column names for each satellite 
+i = 0
+for col in range(5, maxCols - 1, 7):
+    n = str(i)
+    colNames.extend(['sv'+n+'.cpMes', 'sv'+n+'.prMes', 'sv'+n+'.doMes', 
+            'sv'+n+'.sv', 'sv'+n+'.mesQI', 'sv'+n+'.cno', 'sv'+n+'.lli'])
+    i += 1
+
+# turn csv into a data file now that column names have been added
+rxmDf = pd.read_csv(rxmFile, header=None, delimiter=delimiter, names=colNames)
+rxmDf.drop(index=df.index[0], axis=0, inplace=True)
+# print(df)
+
+# save as csv, read into df
+rxmDf.to_csv(processedFile, index=False)
+rxmDf = pd.read_csv(processedFile)
+
+# 1. plot position covariance fields in one plot vs time
+
+# initialize with field names
+# assumes three covariance fields 0, 4, 8 by default; change as needed
+time = '%time'
+cov0 = 'field.position_covariance0'
+cov4 = 'field.position_covariance4'
+cov8 = 'field.position_covariance8'
+numSats = 'numSV'
+pDOP = 'field.pDOP'
+
+# subtract first time from all subsequent times [i.e., start at t=0]   
+fixDf[time] = fixDf[time].subtract(fixDf[time][0])
+rxmDf[time] = rxmDf[time].subtract(rxmDf[time][0])
+
+# plot cov0, cov4, and cov8 together in same plot
+fig, ax0 = plt.subplots()
+ax0.set_title('Position Covariances vs Time [Plotted Together]')
+ax0.plot(fixDf[time], fixDf[cov0], label = "cov0")
+ax0.plot(fixDf[time], fixDf[cov4], label = "cov4")
+ax0.plot(fixDf[time], fixDf[cov8], label = "cov8")
+ax0.legend()
+ax0.set_xlabel("time")
+ax0.set_ylabel("covariance")
+
+# 2. plot cov0, cov4, and cov8 as three separate subplots
+fig, (axA, axB, axC) = plt.subplots(3, figsize=(15,15))
+axA.set_title('Position Covariances vs Time [Plotted Separately]\nCovariance 0')
+axA.plot(fixDf[time], fixDf[cov0], label = "cov0")
+axA.set_xlabel("time")
+axB.set_ylabel("cov0")
+axB.set_title('Covariance 4')
+axB.plot(fixDf[time], fixDf[cov4], label = "cov4", color='darkorange')
+axB.set_xlabel("time")
+axB.set_ylabel("cov4")
+axC.set_title('Covariance 8')
+axC.plot(fixDf[time], fixDf[cov8], label = "cov8", color='green')
+axC.set_xlabel("time")
+axC.set_ylabel("cov8")
+#plt.legend()
+
+# 3. plot number of satellites vs time
+fig, ax1 = plt.subplots()
+ax1.scatter(rxmDf[time], rxmDf[numSats], label = "no. SVs")
+ax1.set_title('Number of Satellites vs. Time')
+plt.xlabel("time")
+plt.ylabel("No. SVs")
+
+# 4. plot position dilution of precision vs time
+fig, ax2 = plt.subplots()
+ax2.scatter(solDf[time], solDf[pDOP], label = "pDOP")
+ax2.set_title('pDOP vs. Time')
+plt.xlabel("time")
+plt.ylabel("pDOP")
+
+#arr = df.to_array()
+
+# 5. print some basic stats [mean, min, max]
+print("Position Covariance:")
+print("           cov0     cov4     cov8")
+print('Mean: {:9.2f}'.format(fixDf[cov0].mean()) + '{:9.2f}'.format(fixDf[cov4].mean()) +
+     '{:9.2f}'.format(fixDf[cov8].mean()))
+print('Min: {:10.2f}'.format(fixDf[cov0].min()) + '{:9.2f}'.format(fixDf[cov4].min()) +
+     '{:9.2f}'.format(fixDf[cov8].min()))
+print('Max: {:10.2f}'.format(fixDf[cov0].max()) + '{:9.2f}'.format(fixDf[cov4].max()) +
+     '{:9.2f}'.format(fixDf[cov8].max()))
+
+
+print("              mean      min      max")
+print('no. SVs: {:9.2f}'.format(rxmDf[numSats].mean()) + '{:9}'.format(rxmDf[numSats].min()) +
+     '{:9}'.format(rxmDf[numSats].max()))
+
+# 6. plot covariances across three limited ranges [x<100, 100<x<1000, x>1000]
+
+# find largest maximum b/t cov0, cov4, cov8 [for upper bound on large range plot]
+if (fixDf[cov8].max() >= fixDf[cov0].max()) and (fixDf[cov8].max() >= fixDf[cov4].max()):
+    maxMax = fixDf[cov8].max()
+elif (fixDf[cov0].max() >= fixDf[cov4].max()):
+    maxMax = fixDf[cov0].max()
+else:
+    maxMax = fixDf[cov4].max()
+
+# small range plot [x<100]
+fig, (axS, axM, axL) = plt.subplots(3, figsize=(15,15))
+axS.set_title('Position Covariances vs Time [Segmented Ranges]\nSmall: 0-100')
+axS.plot(fixDf[time], fixDf[cov0], label = "cov0")
+axS.plot(fixDf[time], fixDf[cov4], label = "cov4")
+axS.plot(fixDf[time], fixDf[cov8], label = "cov8")
+axS.set_ylim([0, 100])
+axS.legend()
+
+# medium range plot [100<x<1000]
+axM.set_title('Medium: 100-1000')
+axM.plot(fixDf[time], fixDf[cov0], label = "cov0")
+axM.plot(fixDf[time], fixDf[cov4], label = "cov4")
+axM.plot(fixDf[time], fixDf[cov8], label = "cov8")
+axM.set_ylim([100, 1000])
+axM.legend()
+
+# large range plot [x>1000]
+axL.set_title('Large: 1000+')
+axL.plot(fixDf[time], fixDf[cov0], label = "cov0")
+axL.plot(fixDf[time], fixDf[cov4], label = "cov4")
+axL.plot(fixDf[time], fixDf[cov8], label = "cov8")
+axL.set_ylim([1000, maxMax]) 
+axL.legend()
