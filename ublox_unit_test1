@@ -1,76 +1,94 @@
-# 0. preprocess data in case variable number of columns/missing column headers
-# 1. plot number of satellites against time
-# 2. code carrier relation: 
-# 2a. count times per sat that code [pseudorange/prMes] - absval carrier [cpMes]*0.19m = 0
-# 2b. check that prMeas is not a perfect multiple of 0.19*cpMeas 
+"""
+    u-blox gps unit test 1:
+    0. preprocess data in case variable number of columns/missing column headers
+    1. plot number of satellites against time
+    2. code carrier relation:
+    2a. count times per sat that
+        code [pseudorange/prMes] - absval carrier [cpMes]*0.19m = 0
+    2b. check that prMeas is not a perfect multiple of 0.19*cpMeas
+"""
 
-import csv
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# 0. preprocess data in case variable number of columns/missing column headers
 
 # input and defs
-dataFile = "/Users/amattinger/Downloads/15-53-22_ublox_rxmraw.csv"
-processedFile = "/Users/amattinger/Downloads/gps_data_processed.csv"
-delimiter = ','
-maxCols = 0
+DATA_FILE = # USER: Can download sample files, use file ending in "rxm_raw" 
+PROCESSED_FILE = # USER: set address
+DELIMITER = ','
 
-# loop through data lines
-with open(dataFile, 'r') as temp:
-    lines = temp.readlines()
-    for l in lines:
-        # count columns in current line
-        colCount = len(l.split(delimiter)) + 1
-        # Set the new most column count
-        maxCols = colCount if maxCols < colCount else maxCols
+def main():
+    """
+    begin code for unit test 1
+    """
+    max_cols = 0
+    # 0. preprocess data in case variable number of columns/missing column headers
+    # loop through data lines
+    with open(DATA_FILE, 'r') as temp:
+        lines = temp.readlines()
+        for line in lines:
+            # count columns in current line
+            col_count = len(line.split(DELIMITER)) + 1
+            # Set the new most column count
+            max_cols = col_count if max_cols < col_count else max_cols
 
-# set column names
-colNames = ['time', 'rcvTOW', 'week', 'numSV','reserved1']
-# generate column names for each satellite 
-i = 0
-for col in range(5, maxCols - 1, 7):
-    n = str(i)
-    colNames.extend(['sv'+n+'.cpMes', 'sv'+n+'.prMes', 'sv'+n+'.doMes', 
-            'sv'+n+'.sv', 'sv'+n+'.mesQI', 'sv'+n+'.cno', 'sv'+n+'.lli'])
-    i += 1
+    # set column names
+    col_names = ['time', 'rcvTOW', 'week', 'numSV', 'reserved1']
+    # generate column names for each satellite
+    i = 0
+    for col in range(5, max_cols - 1, 7):
+        n = str(i)
+        col_names.extend(['sv'+n+'.cpMes', 'sv'+n+'.prMes', 'sv'+n+'.doMes',
+                          'sv'+n+'.sv', 'sv'+n+'.mesQI', 'sv'+n+'.cno',
+                          'sv'+n+'.lli'])
+        i += 1
 
-# turn csv into a data file now that column names have been added
-df = pd.read_csv(dataFile, header=None, delimiter=delimiter, names=colNames)
-df.drop(index=df.index[0], axis=0, inplace=True)
-# print(df)
+    # turn csv into a data file now that column names have been added
+    data_frame = pd.read_csv(DATA_FILE, header=None, delimiter=DELIMITER,
+                             names=col_names)
+    data_frame.drop(index=data_frame.index[0],  # pylint: disable=no-member
+                    axis=0, inplace=True)
 
-# save as csv, read into df
-df.to_csv(processedFile, index=False)
-df = pd.read_csv(processedFile)
+    # save as csv, read into data_frame
+    data_frame.to_csv(PROCESSED_FILE, index=False)  # pylint: disable=no-member
+    data_frame = pd.read_csv(PROCESSED_FILE)
 
-# 1. plot number of satellites against time, output mean
+    # 1. plot number of satellites against time, output mean
 
-# subtract first time from all subsequent times [i.e., start at t=0]   
-df['time'] = df['time'].subtract(df['time'][0])
-# print(df)
+    # subtract first time from all subsequent times [i.e., start at t=0]
+    data_frame['time'] = data_frame['time'].subtract(data_frame['time'][0])
 
-plt.scatter(df['time'], df['numSV'], s=1)
-plt.xlabel('time [s]')
-plt.ylabel('no. SVs')
+    plt.scatter(data_frame['time'], data_frame['numSV'], s=1)
+    plt.xlabel('time [s]')
+    plt.ylabel('no. SVs')
 
-# average number of satellites
-print("\nAverage number of satellites:", format(df['numSV'].mean(), '.2f'))
+    # average number of satellites
+    print("\nAverage number of satellites:", format(data_frame['numSV'].mean(),
+                                                    '.2f'))
 
-# 2. code carrier relation: 
-# 2a. count times per sat that code [pseudorange/prMes] - absval carrier [cpMes]*0.19m = 0
-correlations = 0
-x = lambda a : 0.19*abs(a)
-codes = [col for col in df.columns if 'prMes' in col]
-carriers = [col for col in df.columns if 'cpMes' in col]
+    def x(a):
+        return 0.19 * abs(a)
 
-print("\nFirst test: difference equals zero")
-for num in range(len(codes)):
-    df['sv' + str(num) + '.zeroCorr'] = (df[codes[num]] - x(df[carriers[num]]) == 0)
-    print(df['sv' + str(num) + '.zeroCorr'].value_counts())
-    
-# 2b. check that prMeas is not a perfect multiple of 0.19*cpMeas 
-print("\nSecond test: perfect multiplier")
-for num in range(len(codes)):
-    df['sv' + str(num) + '.perfMult'] = (df[codes[num]] % x(df[carriers[num]]) == 0)
-    print(df['sv' + str(num) + '.perfMult'].value_counts())
+    # 2. code carrier relation:
+    # 2a. count times per sat that
+    #     code [pseudorange/prMes] - absval carrier [cpMes]*0.19m = 0 
+    #     else correlations = 0 [which is good]
+    codes = [col for col in data_frame.columns if 'prMes' in col]
+    carriers = [col for col in data_frame.columns if 'cpMes' in col]
+
+    print("\nFirst test: difference equals zero")
+    for num, code in enumerate(codes):
+        data_frame['sv' + str(num) + '.zeroCorr'] = (data_frame[code] -
+                                                     x(data_frame[carriers[num]]) == 0)
+        print(data_frame['sv' + str(num) + '.zeroCorr'].value_counts())
+
+    # 2b. check that prMeas is not a perfect multiple of 0.19*cpMeas
+    print("\nSecond test: perfect multiplier")
+    for num, code in enumerate(codes):
+        data_frame['sv' + str(num) + '.perfMult'] = (data_frame[code] %
+                                                     x(data_frame[carriers[num]]) == 0)
+        print(data_frame['sv' + str(num) + '.perfMult'].value_counts())
+
+
+if __name__ == '__main__':
+    main()
