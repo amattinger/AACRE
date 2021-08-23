@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 from data_files import DELIMITER, FIX_FILE, RXM_FILE, SOL_FILE, PROCESSED_FILE
 
+
 def main():
     """
     begin code for unit test 3
