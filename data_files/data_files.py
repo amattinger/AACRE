@@ -3,10 +3,11 @@
     oxts and ublox gps system unit tests
 """
 
-# to create the maps, you need to make an api key [can setup with google cloud]
+# USER: to create maps [ublox2 and oxts], first need an api key [can create with google cloud]
 API_KEY = ''
 
-DATA_DIR = './data/'
+# USER: set first part of pathname to all downloaded files
+DATA_DIR = './data/' 
 
 # RUN_CODE = "15-53-28"
 RUN_CODE = "16-10-12"
