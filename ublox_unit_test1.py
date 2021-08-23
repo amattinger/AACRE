@@ -13,14 +13,8 @@ import matplotlib.pyplot as plt
 
 from data_files import DELIMITER, PROCESSED_FILE, RXM_FILE
 
-# input file
-DATA_FILE = RXM_FILE
+DATA_FILE = RXM_FILE # input file
 
-
-# input and defs
-DATA_FILE = # USER: Can download sample files, use file ending in "rxm_raw" 
-PROCESSED_FILE = # USER: set address
-DELIMITER = ','
 
 def main():
     """
