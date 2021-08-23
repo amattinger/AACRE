@@ -14,9 +14,11 @@ import matplotlib.pyplot as plt
 import gmplot as gmp
 import pymap3d as pm # for test 2 if enu needed
 
-DATA_FILE = # USER: can download files in this repo with '.xcom.NCOM[x]SummaryPage.csv' 
-API_KEY =  # USER: you need an API key for test 1, can setup with google cloud
-SAVED_MAP = # USER: set address for google maps overlay
+from data_files import API_KEY, DATA_DIR, SAVED_MAP
+
+# USER: change suffix if using one of the other sample files
+DATA_FILE = DATA_DIR + '210720_182517.xcom.NCOM0SummaryPage.csv'  
+
 
 def main():
     """
